@@ -57,7 +57,9 @@ async function unlock() {
 
 function load() {
   const html = atob(ENCODED);
-  document.open(); document.write(html); document.close();
+  const blob = new Blob([html], {type: 'text/html'});
+  const url = URL.createObjectURL(blob);
+  window.location.href = url;
 }
 
 const stored = localStorage.getItem('crm_auth');
