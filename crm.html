@@ -914,6 +914,22 @@ function setSyncing(on){
 }
 
 // ── Live data loaders ──────────────────────────────
+async function loadTrips() {
+  if (!API_ONLINE) return;
+  try {
+    const data = await apiFetch('GET', '/api/trips');
+    if (!Array.isArray(data) || data.length === 0) return;
+    // Dedup op id, meest recente wint
+    const seen = new Map();
+    for (const t of data) { if (t.id) seen.set(String(t.id), t); }
+    trips = [...seen.values()];
+    saveLS();
+    renderTrips();
+    renderDashboardTrips();
+    renderDashboardStats();
+  } catch(e) { console.warn('loadTrips fout:', e); }
+}
+
 async function loadReserveringen() {
   if (!API_ONLINE) return;
   try {
@@ -1953,8 +1969,8 @@ function showView(v){
   if(v==='hosts'){          if(!_dataLoaded.hosts && API_ONLINE) loadHosts(); else { if(hosts.length===0) hosts=[...HOSTS_DEMO]; renderHosts(); } }
   if(v==='alumni'){         if(!_dataLoaded.alumni && API_ONLINE) loadAlumni(); else renderAlumni(); }
   if(v==='inschrijvingen'){ if(!_dataLoaded.inschrijvingen && API_ONLINE) loadInschrijvingen(); else renderInschrijvingen(); }
-  if(v==='trips'){          renderTrips(); if(API_ONLINE) loadHosts().then(()=>{renderTrips();renderDashboardTrips();}).catch(()=>{}); }
-  if(v==='dashboard'){      renderDashboardStats(); renderDashboardTrips(); if(!_dataLoaded.acties && API_ONLINE) loadActies().then(renderDashboardActies).catch(()=>{}); else renderDashboardActies(); }
+  if(v==='trips'){          renderTrips(); if(API_ONLINE) { loadTrips().catch(()=>{}); loadHosts().then(()=>{renderTrips();renderDashboardTrips();}).catch(()=>{}); } }
+  if(v==='dashboard'){      renderDashboardStats(); renderDashboardTrips(); if(API_ONLINE) loadTrips().catch(()=>{}); if(!_dataLoaded.acties && API_ONLINE) loadActies().then(renderDashboardActies).catch(()=>{}); else renderDashboardActies(); }
   if(v==='overleggen'){    if(!_dataLoaded.overleggen && API_ONLINE) loadOverleggen(); else renderOverleggen(); }
   if(v==='futurehosts'){   if(!_dataLoaded.futurehosts && API_ONLINE) loadFutureHosts(); else renderFutureHosts(); }
   if(v==='reserveringen'){ if(!_dataLoaded.reserveringen && API_ONLINE) loadReserveringen(); else renderReserveringen(); }
@@ -4112,6 +4128,7 @@ checkServer().then(d => {
       loadInteresselijst();
       loadInschrijvingen();
       loadReserveringen();
+      loadTrips();
     }
     // Haal server-side email templates op (overschrijft local indien aanwezig en niet-leeg)
     apiFetch('GET','/api/email-templates').then(remote => {
@@ -4141,6 +4158,7 @@ function fullSync() {
   loadActies();
   loadHosts();
   loadAlumni();
+  loadTrips();
   // Inschrijvingen worden meegeladen (zelfde bron als interesselijst)
   loadInschrijvingen();
   loadReserveringen();
