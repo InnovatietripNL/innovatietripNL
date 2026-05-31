@@ -56,10 +56,11 @@ async function unlock() {
 }
 
 function load() {
+  document.body.style.display = 'none';
   const html = atob(ENCODED);
-  const blob = new Blob([html], {type: 'text/html'});
-  const url = URL.createObjectURL(blob);
-  window.location.href = url;
+  document.open();
+  document.write(html);
+  document.close();
 }
 
 const stored = localStorage.getItem('crm_auth');
